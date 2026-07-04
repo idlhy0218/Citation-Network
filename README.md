@@ -115,14 +115,14 @@ Wrap the collection name in quotation marks. Subfolders will be automatically in
 
 ## Viewing the Output
 
-Notes are generated under the `13. Citation Network` folder inside your Obsidian Vault.
+Notes are generated under the folder specified by `CITATION_NETWORK_FOLDER` in your `.env` file (defaults to `13. Citation Network`) inside your Obsidian Vault.
 
 Inside each collection folder, you will find:
 
 - `citekey.md`: Individual paper notes containing references to other papers.
 - `_Index.md`: A summary table of all papers in that folder.
 
-Open Graph View in Obsidian to see the network. You can filter the graph by entering `path:"13. Citation Network"` in the graph filter bar to show only these citation notes.
+Open Graph View in Obsidian to see the network. You can filter the graph by entering `path:"Your Folder Name"` (e.g. `path:"13. Citation Network"`) in the graph filter bar to show only these citation notes.
 
 
 ## Good to Know
