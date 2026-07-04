@@ -1,5 +1,5 @@
 # Citation Network Builder
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers)
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)
 
 Zotero에 저장된 논문들의 메타데이터와 무료 학술 데이터베이스인 OpenAlex API를 사용하여 논문들 간의 인용 관계를 분석하고, 이를 Obsidian 노트 및 인용 네트워크(시각화 그래프)로 자동 변환하는 도구입니다.
 
