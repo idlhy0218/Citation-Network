@@ -1,4 +1,4 @@
-# Citation Network Builder
+# Citation Network Builder v1.0.1
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.0.1-blue?style=flat-square)
 
 This tool analyzes citation relationships between papers stored in Zotero using the free OpenAlex academic database API, and automatically converts them into linked Obsidian notes.
@@ -22,80 +22,39 @@ This tool analyzes citation relationships between papers stored in Zotero using 
 
 ## Installation
 
-### Step 0 - Fork & Clone the Repository
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/idlhy0218/Citation-Network.git
+   cd Citation-Network
+   ```
 
-1. Click the **Fork** button at the top-right of this GitHub repository page to copy it to your own GitHub account.
-2. Clone the repository to your local computer:
-   - Using Git command:
-     ```bash
-     git clone https://github.com/idlhy0218/Citation-Network.git
-     ```
-   - Or open it using **GitHub Desktop**.
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
+3. **Configure environment variables**:
+   Duplicate `.env.example` as `.env` and configure the following required fields:
+   * **ZOTERO_USER_ID**: Find your ID at [Zotero API Settings](https://www.zotero.org/settings/keys) under "Your userID for API calls".
+   * **ZOTERO_API_KEY**: Create a private key at [Zotero API Settings](https://www.zotero.org/settings/keys).
+   * **OBSIDIAN_VAULT_PATH**: Absolute path to your Obsidian vault.
 
-### Step 1 - Open Terminal & Install Dependencies
+   ```ini
+   # Required Settings
+   ZOTERO_USER_ID=Your_Zotero_User_ID
+   ZOTERO_API_KEY=Your_Zotero_API_Key
+   OBSIDIAN_VAULT_PATH=C:\Users\Username\Documents\MyVault
 
-Open Command Prompt or PowerShell, navigate to this project folder, and install the dependencies.
+   # Optional Settings
+   ZOTERO_LIBRARY_TYPE=user                 # Change to 'group' for group libraries
+   CITATION_NETWORK_FOLDER=Citation Network  # Folder name in Obsidian Vault
+   OPENALEX_EMAIL=your_email@domain.com      # Improves OpenAlex query speed
+   ```
 
-> [!TIP]
-> **Easy way to open terminal at the current folder (Windows)**:
-> 1. Open File Explorer and navigate to this project folder (`Citation Network`).
-> 2. Click the address bar at the top, clear the text, type **`cmd`**, and press **Enter**.
-> 3. A Command Prompt window will open directly in this directory.
-
-Once the terminal is open, run:
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-
-### Step 2 - Create Config File and Set API Keys
-
-When you first clone this repository, you only have the template config file. You need to create a `.env` file and insert your credentials.
-
-1. In the terminal, run the following command to duplicate `.env.example` as a new `.env` file:
-   - **Command Prompt (cmd)**:
-     ```cmd
-     copy .env.example .env
-     ```
-   - **PowerShell**:
-     ```powershell
-     cp .env.example .env
-     ```
-   *(Or copy `.env.example` in File Explorer and rename it to `.env`. Make sure it is not named `.env.txt`)*
-
-2. Open the newly created `.env` file with a text editor (like Notepad) and fill in your details:
-
-   * **ZOTERO_USER_ID**: Go to [Zotero API Settings](https://www.zotero.org/settings/keys). At the top, copy the number next to **"Your userID for API calls is XXXXXX"**.
-   * **ZOTERO_API_KEY**: On the same page, click **"Create new private key"** to generate an API key.
-   * **OBSIDIAN_VAULT_PATH**: The absolute path to your Obsidian Vault folder (e.g. `C:\Users\YourName\Documents\MyVault`).
-
-```ini
-# [Required] Zotero API credentials & Obsidian path
-ZOTERO_USER_ID=Your Zotero User ID (digits)
-ZOTERO_API_KEY=Your Zotero API Key
-OBSIDIAN_VAULT_PATH=C:\Users\YourUsername\Path\To\Obsidian\Vault
-
-# [Optional] Additional settings
-ZOTERO_LIBRARY_TYPE=user
-CITATION_NETWORK_FOLDER=Citation Network
-OPENALEX_EMAIL=your_email@domain.com
-```
-
-3. **Personalizing Your Configuration (Optional)**:
-   * **Zotero Library Type**: If you are extracting citations from a group library rather than a personal one, change `ZOTERO_LIBRARY_TYPE` from `user` to `group`.
-   * **Change Output Folder Name**: If you want the notes to be saved in a folder other than the default `Citation Network`, modify `CITATION_NETWORK_FOLDER` to your preferred folder name (e.g., `My Citations`).
-   * **Improve OpenAlex API Speed**: If you have a large library (dozens of papers or more), add your email address in `OPENALEX_EMAIL`. OpenAlex offers a faster rate limit ("Polite Pool") for users who identify themselves via email.
-
-
-### Step 3 - Test the Connection
-
-To verify if everything is set up correctly, run:
-
-```bash
-python main.py --test
-```
+4. **Test the connection**:
+   ```bash
+   python main.py --test
+   ```
 
 If you see `"Zotero connection successful"` and `"OpenAlex connection successful"`, you are ready to go.
 
