@@ -22,7 +22,7 @@ class OpenAlexClient:
 
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'CitationNetworkBuilder/1.0.1 (https://github.com/idlhy0218/Citation-Network)',
+            'User-Agent': 'CitationNetworkBuilder/1.1.0 (https://github.com/idlhy0218/Citation-Network)',
         })
         # Polite pool: email registration grants higher rate limit
         if email:
@@ -116,6 +116,8 @@ class OpenAlexClient:
     def build_citation_network(
         self,
         papers_by_collection: dict,
+        progress_callback=None,
+        log_callback=None
     ) -> tuple[dict, dict, dict]:
         """
         Builds citation relationships from paper data grouped by collection.
@@ -133,7 +135,10 @@ class OpenAlexClient:
                 if doi:
                     all_papers[doi] = paper
 
-        print(f"\nQuerying OpenAlex for {len(all_papers)} papers...")
+        msg = f"Querying OpenAlex for {len(all_papers)} papers..."
+        print(f"\n{msg}")
+        if log_callback:
+            log_callback(msg)
 
         # Step 1: Map each DOI to OpenAlex ID
         doi_to_oa_id: dict[str, str] = {}
@@ -143,9 +148,19 @@ class OpenAlexClient:
         no_doi_papers = [p for col in papers_by_collection.values()
                          for p in col['papers'] if not p.get('doi')]
         if no_doi_papers:
-            print(f"  Skipped {len(no_doi_papers)} papers without a DOI")
+            skip_msg = f"Skipped {len(no_doi_papers)} papers without a DOI"
+            print(f"  {skip_msg}")
+            if log_callback:
+                log_callback(f"  - {skip_msg}")
 
-        for doi in tqdm(list(all_papers.keys()), desc="OpenAlex lookup"):
+        doi_list = list(all_papers.keys())
+        total_doi = len(doi_list)
+        iterator = tqdm(doi_list, desc="OpenAlex lookup") if not progress_callback else doi_list
+
+        for idx, doi in enumerate(iterator):
+            if progress_callback:
+                progress_callback(idx + 1, total_doi, f"OpenAlex query [{idx+1}/{total_doi}]: {doi}")
+            
             work = self.get_work_by_doi(doi)
             if not work:
                 continue
@@ -188,6 +203,9 @@ class OpenAlexClient:
 
         total_edges = sum(len(v) for v in cites.values())
         found = len(doi_to_oa_id)
-        print(f"  OpenAlex matches: {found}/{len(all_papers)} | Citation edges: {total_edges}")
+        stat_msg = f"OpenAlex matches: {found}/{len(all_papers)} | Citation edges: {total_edges}"
+        print(f"  {stat_msg}")
+        if log_callback:
+            log_callback(f"✓ {stat_msg}")
 
         return cites, cited_by, all_papers

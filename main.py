@@ -1,7 +1,7 @@
 """
 Citation Network Builder
 ========================
-Version: 1.0.1
+Version: 1.1.0
 
 python main.py                             -> Collection selection tree
 python main.py --collection "Folder Name"  -> Process folder immediately (includes subfolders)
@@ -103,14 +103,28 @@ def pick_collection(zotero: ZoteroClient) -> tuple[str, bool]:
 
 # --------------------------------------------------------------------
 def main():
-    parser = argparse.ArgumentParser(add_help=False)
+    parser = argparse.ArgumentParser(description="Citation Network Builder")
     parser.add_argument('--collection', type=str, default=None,
                         help='Name of the collection to process')
-    parser.add_argument('--test', action='store_true')
+    parser.add_argument('--test', action='store_true',
+                        help='Test API connections')
+    parser.add_argument('--cli', action='store_true',
+                        help='Run in terminal CLI mode')
+    parser.add_argument('--gui', action='store_true',
+                        help='Run in Desktop GUI mode (default)')
     args, _ = parser.parse_known_args()
 
+    # Launch GUI if no explicit CLI flag or collection/test arguments provided
+    if not args.cli and not args.collection and not args.test:
+        try:
+            from gui import main as gui_main
+            gui_main()
+            return
+        except Exception as e:
+            print(f"Failed to start GUI mode ({e}). Falling back to CLI mode...")
+
     print("=" * 60)
-    print("  Citation Network Builder")
+    print("  Citation Network Builder (CLI Mode)")
     print("=" * 60)
 
     if not ZOTERO_USER_ID or not ZOTERO_API_KEY or not OBSIDIAN_VAULT:

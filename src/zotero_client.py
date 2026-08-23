@@ -59,7 +59,13 @@ class ZoteroClient:
 
         return tree, roots
 
-    def get_papers_in_subtree(self, collection_key: str, tree: dict) -> dict:
+    def get_papers_in_subtree(
+        self,
+        collection_key: str,
+        tree: dict,
+        progress_callback=None,
+        log_callback=None
+    ) -> dict:
         """
         Recursively collects papers from the selected collection and all its subcollections.
 
@@ -69,6 +75,9 @@ class ZoteroClient:
         result = {}
         col = tree[collection_key]
 
+        if log_callback:
+            log_callback(f"Fetching Zotero collection: {col['name']}")
+
         # Papers in the current collection
         papers = self.get_items_in_collection(collection_key)
         if papers:
@@ -77,10 +86,19 @@ class ZoteroClient:
                 'parent_key': col['parent_key'],
                 'papers': papers,
             }
+            if log_callback:
+                log_callback(f"  - Found {len(papers)} papers in '{col['name']}'")
 
         # Recursively fetch subcollections
         for child_key in col['children']:
-            result.update(self.get_papers_in_subtree(child_key, tree))
+            result.update(
+                self.get_papers_in_subtree(
+                    child_key,
+                    tree,
+                    progress_callback=progress_callback,
+                    log_callback=log_callback
+                )
+            )
 
         return result
 
@@ -98,7 +116,13 @@ class ZoteroClient:
                     papers.append(meta)
         return papers
 
-    def get_all_collections_with_papers(self, progress: bool = True, key_filter: str = '') -> dict:
+    def get_all_collections_with_papers(
+        self,
+        progress: bool = True,
+        key_filter: str = '',
+        progress_callback=None,
+        log_callback=None
+    ) -> dict:
         """
         Returns all collections (or a specific collection by key) and their papers.
         key_filter: Collection key ('' to fetch all)
@@ -111,8 +135,13 @@ class ZoteroClient:
                 return {}
 
         result = {}
-        iterator = tqdm(collections, desc="Fetching collections") if progress else collections
-        for col in iterator:
+        total = len(collections)
+        iterator = tqdm(collections, desc="Fetching collections") if (progress and not progress_callback) else collections
+        for i, col in enumerate(iterator):
+            if log_callback:
+                log_callback(f"Fetching Zotero collection [{i+1}/{total}]: {col['name']}")
+            if progress_callback:
+                progress_callback(i + 1, total, f"Fetching collection: {col['name']}")
 
             papers = self.get_items_in_collection(col['key'])
             if papers:
@@ -121,6 +150,8 @@ class ZoteroClient:
                     'parent_key': col['parent_key'],
                     'papers': papers,
                 }
+                if log_callback:
+                    log_callback(f"  - Found {len(papers)} papers in '{col['name']}'")
 
         return result
 

@@ -1,5 +1,5 @@
-# Citation Network Builder v1.0.1
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.0.1-blue?style=flat-square)
+# Citation Network Builder v1.1.0
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)
 
 Zotero에 저장된 논문들의 메타데이터와 무료 학술 데이터베이스인 OpenAlex API를 사용하여 논문들 간의 인용 관계를 분석하고, 이를 Obsidian 노트 및 인용 네트워크(시각화 그래프)로 자동 변환하는 도구입니다.
 
@@ -61,38 +61,36 @@ Zotero에 저장된 논문들의 메타데이터와 무료 학술 데이터베�
 
 ## 사용 방법
 
-### 기본 실행 (권장)
+### 1. 모던 데스크톱 GUI 실행 (기본 권장)
 
-`run.bat` 파일을 더블클릭하거나, 명령 프롬프트에서 아래 명령어를 실행합니다.
+`run.bat` 파일을 더블클릭하거나, 터미널에서 아래 명령어를 실행합니다.
 
-    python main.py
+```bash
+python main.py
+# 또는
+python gui.py
+```
 
-실행하면 Zotero 폴더 목록이 트리 구조로 나타납니다.
+- **차분하고 모던한 다크 테마 UI**가 실행됩니다.
+- Zotero 컬렉션을 시각적 트리 및 검색으로 쉽게 탐색하고 선택할 수 있습니다.
+- API 연결 상태 테스트, `.env` 환경 설정 저장/수정, Obsidian Vault 폴더 탐색기(`Browse...`)를 지원합니다.
+- `▶ Build Citation Network` 버튼 하나로 실시간 진행률, 로그, 통계 지표를 확인하며 인용 네트워크를 구축할 수 있습니다.
+- 완료 후 `Open Vault ↗` 버튼으로 결과 노트를 바로 열어볼 수 있습니다.
 
-    ============================================================
-      조테로 폴더를 선택하세요
-      (A) = 하위 폴더 있음  /  (단일) = 하위 폴더 없음
-    ============================================================
-      1.  (단일) Introduction
-      2.  (A)    Machine Learning
-          3.  (단일) Supervised Learning
-          4.  (단일) Unsupervised Learning
-      ...
+### 2. 터미널 CLI 모드로 실행
 
-번호를 입력하면 해당 폴더와 하위 폴더의 모든 논문이 처리됩니다.
+기존 콘솔 기반으로 실행하고 싶다면 `--cli` 옵션을 지정합니다.
 
-### 폴더 이름을 직접 지정해서 실행
+```bash
+# 콘솔 대화형 트리 선택
+python main.py --cli
 
-    python main.py --collection "Machine Learning"
+# 특정 컬렉션 바로 처리 (하위 폴더 자동 포함)
+python main.py --collection "Machine Learning"
 
-폴더 이름을 따옴표로 감싸서 입력합니다. 하위 폴더가 있으면 자동으로 함께 처리됩니다.
-
-### API 연결 테스트
-
-    python main.py --test
-
-
-## 파일 구조와 역할
+# API 연결 테스트만 수행
+python main.py --test
+```
 
     Citation Network/
     │

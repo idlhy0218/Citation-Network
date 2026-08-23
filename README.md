@@ -1,5 +1,5 @@
-# Citation Network Builder v1.0.1
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.0.1-blue?style=flat-square)
+# Citation Network Builder v1.1.0
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)
 
 This tool analyzes citation relationships between papers stored in Zotero using the free OpenAlex academic database API, and automatically converts them into linked Obsidian notes.
 
@@ -61,38 +61,36 @@ If you see `"Zotero connection successful"` and `"OpenAlex connection successful
 
 ## How to Use
 
-### Run Interactively (Recommended)
+### 1. Modern Desktop GUI (Default / Recommended)
 
 Double-click `run.bat` or run the following command in your terminal:
 
-    python main.py
+```bash
+python main.py
+# or
+python gui.py
+```
 
-The program will display your Zotero folders in a tree structure:
+- **Subdued & Sleek Dark Mode UI** is launched.
+- Visually browse and search your Zotero collection hierarchy with folder/item icons.
+- One-click API connection test, `.env` settings management, and Obsidian Vault path browser.
+- Real-time 3-step progress bar, live execution logs, and network metrics (Papers, DOIs, Edges, Notes).
+- Quick button to open the generated Obsidian Vault folder directly.
 
-    ============================================================
-      Select a Zotero folder
-      (Tree) = Has subfolders / (Single) = No subfolders
-    ============================================================
-      1.  (Single) Introduction
-      2.  (Tree)   Machine Learning
-          3.  (Single) Supervised Learning
-          4.  (Single) Unsupervised Learning
-      ...
+### 2. Terminal CLI Mode
 
-Enter the number of the folder you want to process. Selecting a parent folder will automatically process all its subfolders.
+If you prefer the command line, specify `--cli`:
 
-### Run with a Specific Folder Name
+```bash
+# Interactive tree prompt in terminal
+python main.py --cli
 
-    python main.py --collection "Machine Learning"
+# Process a specific collection immediately
+python main.py --collection "Machine Learning"
 
-Wrap the collection name in quotation marks. Subfolders will be automatically included.
-
-### Test Connection
-
-    python main.py --test
-
-
-## File Structure and Roles
+# Test API connections only
+python main.py --test
+```
 
     Citation Network/
     │

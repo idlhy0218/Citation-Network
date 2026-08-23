@@ -31,7 +31,7 @@ class ObsidianWriter:
         return self.sanitize_filename(paper.get('title', 'untitled')[:60]) + '.md'
 
     def _wiki_link(self, paper: dict, for_table: bool = False) -> str:
-        """
+        r"""
         Returns a wiki-link.
         for_table=True escapes the alias separator as \| to prevent
         breaking markdown table columns.
@@ -249,10 +249,14 @@ updated: {self.today}
         cites: dict,
         cited_by: dict,
         all_papers_by_doi: dict,
-    ) -> None:
+        progress_callback=None,
+        log_callback=None
+    ) -> tuple[int, int]:
 
         os.makedirs(self.base_path, exist_ok=True)
         created = updated = 0
+        total_papers = sum(len(col_data['papers']) for col_data in papers_by_collection.values())
+        processed_count = 0
 
         for col_name, col_data in papers_by_collection.items():
             papers     = col_data['papers']
@@ -260,8 +264,14 @@ updated: {self.today}
             os.makedirs(col_folder, exist_ok=True)
 
             print(f"\n[{col_name}]  ({len(papers)} papers)")
+            if log_callback:
+                log_callback(f"Writing collection notes: [{col_name}] ({len(papers)} papers)")
 
             for paper in papers:
+                processed_count += 1
+                if progress_callback:
+                    progress_callback(processed_count, total_papers, f"Writing note [{processed_count}/{total_papers}]")
+
                 doi = paper.get('doi', '')
                 cites_papers    = [all_papers_by_doi[d] for d in cites.get(doi, [])    if d in all_papers_by_doi]
                 cited_by_papers = [all_papers_by_doi[d] for d in cited_by.get(doi, []) if d in all_papers_by_doi]
@@ -290,6 +300,10 @@ updated: {self.today}
                 f.write(idx_content)
             print(f"  index:   _Index.md")
 
-        print(f"\n{'='*50}")
-        print(f"Done.  Created: {created}  |  Updated: {updated}")
-        print(f"Path: {self.base_path}")
+        done_msg = f"Done. Created: {created} | Updated: {updated} notes in Obsidian"
+        print(f"\n{'='*50}\n{done_msg}\nPath: {self.base_path}")
+        if log_callback:
+            log_callback(f"✓ {done_msg}")
+            log_callback(f"  Vault path: {self.base_path}")
+
+        return created, updated

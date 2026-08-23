@@ -2,3 +2,4 @@ pyzotero>=1.5.0
 requests>=2.31.0
 tqdm>=4.66.0
 python-dotenv>=1.0.0
+customtkinter>=5.2.0
