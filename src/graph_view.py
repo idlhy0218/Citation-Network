@@ -92,9 +92,9 @@ class GraphView(ctk.CTkFrame):
         # Obsidian Graph Settings Parameters
         self.show_settings = False
         self.setting_node_size = 9.0     # Base radius (slider 4-22)
-        self.setting_distance = 140.0    # Spring rest length (slider 60-260)
-        self.setting_repel = 9500.0      # Repulsion (slider 3000-25000)
-        self.setting_gravity = 0.004     # Center pull (slider 0.001-0.025)
+        self.setting_distance = 170.0    # Spring rest length (slider 80-320)
+        self.setting_repel = 14000.0     # Repulsion (slider 4000-35000)
+        self.setting_gravity = 0.0008    # Center pull (slider 0.0001-0.0050)
 
         # Live Physics Engine Parameters
         self.alpha = 0.0                 # Physics activity/temperature
@@ -242,27 +242,27 @@ class GraphView(ctk.CTkFrame):
         # Slider 2: Link Distance
         box_dist = ctk.CTkFrame(self.settings_card, fg_color="transparent")
         box_dist.grid(row=0, column=1, padx=6, pady=4, sticky="ew")
-        self.lbl_dist = ctk.CTkLabel(box_dist, text="Distance: 140", font=ctk.CTkFont(size=11), text_color=GRAPH_THEME["text_muted"])
+        self.lbl_dist = ctk.CTkLabel(box_dist, text="Distance: 170", font=ctk.CTkFont(size=11), text_color=GRAPH_THEME["text_muted"])
         self.lbl_dist.pack(anchor="w")
-        self.slider_dist = ctk.CTkSlider(box_dist, from_=60, to=260, number_of_steps=20, fg_color="#ECEEF4", progress_color="#8E7CC3", button_color="#8E7CC3", button_hover_color="#7B68B3", height=14, command=self._on_dist_slider)
+        self.slider_dist = ctk.CTkSlider(box_dist, from_=80, to=320, number_of_steps=24, fg_color="#ECEEF4", progress_color="#8E7CC3", button_color="#8E7CC3", button_hover_color="#7B68B3", height=14, command=self._on_dist_slider)
         self.slider_dist.set(self.setting_distance)
         self.slider_dist.pack(fill="x", pady=(2, 0))
 
         # Slider 3: Repel Force
         box_rep = ctk.CTkFrame(self.settings_card, fg_color="transparent")
         box_rep.grid(row=0, column=2, padx=6, pady=4, sticky="ew")
-        self.lbl_repel = ctk.CTkLabel(box_rep, text="Repel: 9.5k", font=ctk.CTkFont(size=11), text_color=GRAPH_THEME["text_muted"])
+        self.lbl_repel = ctk.CTkLabel(box_rep, text="Repel: 14.0k", font=ctk.CTkFont(size=11), text_color=GRAPH_THEME["text_muted"])
         self.lbl_repel.pack(anchor="w")
-        self.slider_repel = ctk.CTkSlider(box_rep, from_=3000, to=25000, number_of_steps=22, fg_color="#ECEEF4", progress_color="#8E7CC3", button_color="#8E7CC3", button_hover_color="#7B68B3", height=14, command=self._on_repel_slider)
+        self.slider_repel = ctk.CTkSlider(box_rep, from_=4000, to=35000, number_of_steps=31, fg_color="#ECEEF4", progress_color="#8E7CC3", button_color="#8E7CC3", button_hover_color="#7B68B3", height=14, command=self._on_repel_slider)
         self.slider_repel.set(self.setting_repel)
         self.slider_repel.pack(fill="x", pady=(2, 0))
 
         # Slider 4: Center Force
         box_grav = ctk.CTkFrame(self.settings_card, fg_color="transparent")
         box_grav.grid(row=0, column=3, padx=6, pady=4, sticky="ew")
-        self.lbl_grav = ctk.CTkLabel(box_grav, text="Center: 0.004", font=ctk.CTkFont(size=11), text_color=GRAPH_THEME["text_muted"])
+        self.lbl_grav = ctk.CTkLabel(box_grav, text="Center: 0.0008", font=ctk.CTkFont(size=11), text_color=GRAPH_THEME["text_muted"])
         self.lbl_grav.pack(anchor="w")
-        self.slider_grav = ctk.CTkSlider(box_grav, from_=0.001, to=0.025, number_of_steps=24, fg_color="#ECEEF4", progress_color="#8E7CC3", button_color="#8E7CC3", button_hover_color="#7B68B3", height=14, command=self._on_grav_slider)
+        self.slider_grav = ctk.CTkSlider(box_grav, from_=0.0001, to=0.0050, number_of_steps=25, fg_color="#ECEEF4", progress_color="#8E7CC3", button_color="#8E7CC3", button_hover_color="#7B68B3", height=14, command=self._on_grav_slider)
         self.slider_grav.set(self.setting_gravity)
         self.slider_grav.pack(fill="x", pady=(2, 0))
 
@@ -441,7 +441,7 @@ class GraphView(ctk.CTkFrame):
     def _on_grav_slider(self, val):
         self.setting_gravity = float(val)
         self.k_gravity = self.setting_gravity
-        self.lbl_grav.configure(text=f"Center: {val:.3f}")
+        self.lbl_grav.configure(text=f"Center: {val:.4f}")
         self.wake_simulation(energy=0.45)
 
     # ------------------------------------------------------------------
@@ -540,8 +540,95 @@ class GraphView(ctk.CTkFrame):
         self.redraw()
 
     # ------------------------------------------------------------------
-    # Data Loading
+    # Data Loading & Component Layout
     # ------------------------------------------------------------------
+    def _apply_component_layout(self):
+        """
+        Discovers connected components (citation chunks) and positions them in distinct
+        radial sectors so individual research clusters are visually separated rather
+        than collapsing into an overcrowded center.
+        """
+        n = len(self.doi_list)
+        if n == 0:
+            return
+
+        # Build adjacency graph (undirected components)
+        adj = {i: [] for i in range(n)}
+        if len(self.edge_indices) > 0:
+            for u, v in self.edge_indices:
+                adj[u].append(v)
+                adj[v].append(u)
+
+        visited = set()
+        components = []
+        for i in range(n):
+            if i not in visited:
+                comp = []
+                queue = [i]
+                visited.add(i)
+                while queue:
+                    curr = queue.pop(0)
+                    comp.append(curr)
+                    for neighbor in adj[curr]:
+                        if neighbor not in visited:
+                            visited.add(neighbor)
+                            queue.append(neighbor)
+                components.append(comp)
+
+        # Separate multi-node clusters from isolated singletons
+        clusters = [c for c in components if len(c) > 1]
+        singletons = [c[0] for c in components if len(c) == 1]
+
+        # Sort clusters by size (descending)
+        clusters.sort(key=len, reverse=True)
+
+        new_pos = np.zeros((n, 2), dtype=np.float32)
+
+        # 1. Position multi-node clusters in distinct radial sectors
+        num_clusters = len(clusters)
+        if num_clusters == 1:
+            # Single main cluster: center around (0, 0) with gentle dispersion
+            comp = clusters[0]
+            m = len(comp)
+            for idx_in_c, node_idx in enumerate(comp):
+                theta = (2.0 * math.pi * idx_in_c) / max(m, 1)
+                r = 60.0 + (idx_in_c * 8.0) if m > 10 else 50.0 + random.uniform(-15.0, 15.0)
+                new_pos[node_idx] = [math.cos(theta) * r, math.sin(theta) * r]
+        elif num_clusters > 1:
+            # Spread cluster centers evenly across 360 degrees
+            cluster_radius = max(280.0, 130.0 + num_clusters * 45.0)
+            for c_idx, comp in enumerate(clusters):
+                cluster_angle = (2.0 * math.pi * c_idx) / num_clusters
+                cx = math.cos(cluster_angle) * cluster_radius
+                cy = math.sin(cluster_angle) * cluster_radius
+                m = len(comp)
+                for idx_in_c, node_idx in enumerate(comp):
+                    theta = (2.0 * math.pi * idx_in_c) / max(m, 1)
+                    local_r = 40.0 + min(m * 6.0, 80.0) + random.uniform(-10.0, 10.0)
+                    new_pos[node_idx] = [
+                        cx + math.cos(theta) * local_r,
+                        cy + math.sin(theta) * local_r
+                    ]
+
+        # 2. Position isolated singletons in an outer orbital ring
+        num_singles = len(singletons)
+        if num_singles > 0:
+            orbit_radius = (max(280.0, 130.0 + num_clusters * 45.0) + 160.0) if num_clusters > 0 else 220.0
+            for s_idx, node_idx in enumerate(singletons):
+                angle = (2.0 * math.pi * s_idx) / max(num_singles, 1)
+                r = orbit_radius + random.uniform(-25.0, 25.0)
+                new_pos[node_idx] = [math.cos(angle) * r, math.sin(angle) * r]
+
+        self.pos = new_pos
+        self.vel = np.zeros((n, 2), dtype=np.float32)
+
+        # Synchronize back to self.nodes dict
+        for i, doi in enumerate(self.doi_list):
+            self.nodes[doi]["x"] = float(self.pos[i, 0])
+            self.nodes[doi]["y"] = float(self.pos[i, 1])
+            self.nodes[doi]["vx"] = 0.0
+            self.nodes[doi]["vy"] = 0.0
+
     def load_graph_data(
         self,
         cites: dict[str, list[str]],
@@ -592,12 +679,6 @@ class GraphView(ctk.CTkFrame):
             local_degree = (in_deg * 2.5) + (out_deg * 1.0)
             radius = self.setting_node_size + min(local_degree * 1.8, 22.0)
 
-            # Circular initial placement with wider dispersion
-            angle = (2.0 * math.pi * i) / max(len(all_dois), 1)
-            dist = 180.0 + random.uniform(-40.0, 40.0)
-            x = math.cos(angle) * dist
-            y = math.sin(angle) * dist
-
             # Hub nodes: papers with high local connections in this folder
             is_hub = (in_deg >= 2) or (local_degree >= 5)
             base_color = GRAPH_THEME["node_hub"] if is_hub else GRAPH_THEME["node_regular"]
@@ -614,8 +695,8 @@ class GraphView(ctk.CTkFrame):
                 "radius": radius,
                 "is_hub": is_hub,
                 "base_color": base_color,
-                "x": x,
-                "y": y,
+                "x": 0.0,
+                "y": 0.0,
                 "vx": 0.0,
                 "vy": 0.0,
                 "is_pinned": False,
@@ -636,7 +717,7 @@ class GraphView(ctk.CTkFrame):
         self.doi_to_idx = {doi: i for i, doi in enumerate(self.doi_list)}
         n = len(self.doi_list)
 
-        self.pos = np.array([[self.nodes[d]["x"], self.nodes[d]["y"]] for d in self.doi_list], dtype=np.float32)
+        self.pos = np.zeros((n, 2), dtype=np.float32)
         self.vel = np.zeros((n, 2), dtype=np.float32)
         self.radii = np.array([self.nodes[d]["radius"] for d in self.doi_list], dtype=np.float32)
         self.pinned = np.zeros(n, dtype=bool)
@@ -646,6 +727,9 @@ class GraphView(ctk.CTkFrame):
             if s in self.doi_to_idx and t in self.doi_to_idx:
                 edge_list.append((self.doi_to_idx[s], self.doi_to_idx[t]))
         self.edge_indices = np.array(edge_list, dtype=np.int32) if edge_list else np.empty((0, 2), dtype=np.int32)
+
+        # Apply component-aware radial layout
+        self._apply_component_layout()
 
         # Fast initial relaxation
         self._simulate_step(dt=0.35, steps=50)
@@ -722,13 +806,13 @@ class GraphView(ctk.CTkFrame):
 
             dir_vec = diff / dist[:, :, np.newaxis]
 
-            # 1. Coulomb Repulsion (400px cutoff for efficiency)
-            rep_mask = (dist_sq < 160000.0)
+            # 1. Coulomb Repulsion (expanded to 800px cutoff so distinct chunks continue repelling)
+            rep_mask = (dist_sq < 640000.0)
             np.fill_diagonal(rep_mask, False)
             rep_mag = np.where(rep_mask, effective_rep / dist_sq, 0.0)
 
-            # 2. Hard Collision Prevention (prevents node overlap)
-            min_dist_matrix = self.radii[:, np.newaxis] + self.radii[np.newaxis, :] + 14.0
+            # 2. Hard Collision Prevention (prevents node overlap with generous spacing)
+            min_dist_matrix = self.radii[:, np.newaxis] + self.radii[np.newaxis, :] + 22.0
             col_mask = (dist < min_dist_matrix)
             np.fill_diagonal(col_mask, False)
             overlap_mag = np.where(col_mask, (min_dist_matrix - dist) * (12.0 * alpha_scale), 0.0)
@@ -767,12 +851,13 @@ class GraphView(ctk.CTkFrame):
             self.nodes[doi]["is_pinned"] = bool(self.pinned[i])
 
     def recompute_layout(self):
-        """Unpins nodes and shakes layout to find optimal equilibrium."""
+        """Unpins nodes, reapplies component layout, and shakes layout to find optimal equilibrium."""
         if self.pinned is not None:
             self.pinned[:] = False
         for n in self.nodes.values():
             n["is_pinned"] = False
-        self._simulate_step(dt=0.35, steps=40)
+        self._apply_component_layout()
+        self._simulate_step(dt=0.35, steps=50)
         self.fit_view()
         self.wake_simulation(energy=0.9)
 
@@ -802,7 +887,7 @@ class GraphView(ctk.CTkFrame):
 
         zoom_x = (w * 0.82) / span_x
         zoom_y = (h * 0.82) / span_y
-        self.zoom = min(max(min(zoom_x, zoom_y), 0.25), 2.0)
+        self.zoom = min(max(min(zoom_x, zoom_y), 0.15), 2.0)
 
         mid_x = (min_x + max_x) / 2.0
         mid_y = (min_y + max_y) / 2.0
