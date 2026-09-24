@@ -22,7 +22,7 @@ class OpenAlexClient:
 
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'CitationNetworkBuilder/1.1.0 (https://github.com/idlhy0218/Citation-Network)',
+            'User-Agent': 'CitationNetworkBuilder/1.2.0 (https://github.com/idlhy0218/Citation-Network)',
         })
         # Polite pool: email registration grants higher rate limit
         if email:

@@ -22,8 +22,11 @@ class ZoteroClient:
     # Collections
     # ------------------------------------------------------------------ #
     def get_collections(self) -> list[dict]:
-        """Returns all collections: [{key, name, parent_key}]"""
-        raw = self.zot.collections()
+        """Returns all collections across all pages: [{key, name, parent_key}]"""
+        try:
+            raw = self.zot.everything(self.zot.collections())
+        except Exception:
+            raw = self.zot.collections()
         return [
             {
                 'key': c['key'],
@@ -52,10 +55,10 @@ class ZoteroClient:
             else:
                 roots.append(key)
 
-        # Sort by name
-        roots.sort(key=lambda k: tree[k]['name'])
+        # Sort alphabetically A-Z (case-insensitive)
+        roots.sort(key=lambda k: tree[k]['name'].lower())
         for col in tree.values():
-            col['children'].sort(key=lambda k: tree[k]['name'])
+            col['children'].sort(key=lambda k: tree[k]['name'].lower())
 
         return tree, roots
 

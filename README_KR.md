@@ -1,138 +1,93 @@
-# Citation Network Builder v1.1.0
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)
+# Citation Network Builder v1.2.0
 
-Zotero에 저장된 논문들의 메타데이터와 무료 학술 데이터베이스인 OpenAlex API를 사용하여 논문들 간의 인용 관계를 분석하고, 이를 Obsidian 노트 및 인용 네트워크(시각화 그래프)로 자동 변환하는 도구입니다.
+![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white) ![Version](https://img.shields.io/badge/version-1.2.0-8E7CC3?style=flat-square) ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)
 
-### 작업 흐름
+**Citation Network Builder**는 **Zotero**에 저장된 논문들의 인용 관계를 무료 학술 데이터베이스인 **OpenAlex**로 자동 분석하여, **Obsidian** 상호 연결 노트 및 앱 내 **인터랙티브 2D 인용망 그래프**로 시각화해주는 연구용 도구입니다.
 
-1. Zotero: 내 라이브러리에서 분석할 폴더(컬렉션)와 논문 목록을 수집합니다.
-2. OpenAlex: 각 논문의 DOI를 기반으로 OpenAlex 데이터베이스를 조회하여 해당 폴더 내 논문들 사이의 인용 및 피인용 관계를 찾아냅니다.
-3. Obsidian: 분석 완료된 관계 정보를 바탕으로 개별 논문 노트를 생성하고 내부 링크([[wiki-link]])로 서로 연결합니다. Obsidian의 Graph View를 통해 인용망을 시각화합니다.
+---
 
+## 3단계 빠른 시작 가이드 (Quick Start)
 
-
-## 필요한 것
-
-- **Python 3.9 이상** (https://python.org)
-  - > [!IMPORTANT]
-  > 설치 파일 실행 시 맨 아래에 있는 **"Add python.exe to PATH"** 옵션을 반드시 체크해 주세요. 체크하지 않으면 터미널에서 `python` 명령어를 찾을 수 없다는 오류가 발생합니다.
-- **Zotero 계정 및 API 키**
-- **Obsidian** (https://obsidian.md)
-
-
-## 설치 방법
-
-1. **저장소 복제**:
-   ```bash
-   git clone https://github.com/idlhy0218/Citation-Network.git
-   cd Citation-Network
-   ```
-
-2. **필수 패키지 설치**:
+### 1단계: 파이썬 및 패키지 설치
+1. [python.org](https://python.org)에서 **Python 3.9 이상**을 다운로드하여 설치합니다.
+   > [!IMPORTANT]
+   > 윈도우 설치 시 설치 창 맨 아래의 **"Add python.exe to PATH"** 체크박스를 반드시 체크하세요.
+2. 터미널(또는 명령 프롬프트)을 열고 프로그램 폴더로 이동한 뒤 아래 명령어를 입력합니다:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **환경 설정 (.env)**:
-   `.env.example` 파일을 복사하여 `.env` 파일을 생성한 뒤, 아래 필수 설정을 채워 넣습니다.
-   * **ZOTERO_USER_ID**: [Zotero API Settings](https://www.zotero.org/settings/keys) 페이지 상단의 "Your userID for API calls"의 숫자 ID.
-   * **ZOTERO_API_KEY**: 동일 페이지에서 "Create new private key"로 생성한 API 키.
-   * **OBSIDIAN_VAULT_PATH**: Obsidian 볼트 폴더의 절대 경로.
+### 2단계: 환경 설정 (.env 입력 - 딱 3가지)
+프로젝트 폴더의 `.env.example` 파일을 복사하여 이름을 `.env`로 바꾼 뒤, 아래 3개 항목만 본인 정보로 채워 넣습니다:
 
-   ```ini
-   # 필수 설정 (Required)
-   ZOTERO_USER_ID=본인의_Zotero_사용자_ID
-   ZOTERO_API_KEY=본인의_Zotero_API_키
-   OBSIDIAN_VAULT_PATH=C:\Users\Username\Documents\MyVault
-
-   # 선택 설정 (Optional)
-   ZOTERO_LIBRARY_TYPE=user                 # 그룹 라이브러리는 'group'으로 변경
-   CITATION_NETWORK_FOLDER=Citation Network  # 볼트 내 생성될 폴더명
-   OPENALEX_EMAIL=your_email@domain.com      # Polite Pool을 통한 OpenAlex 호출 속도 향상
-   ```
-
-4. **연결 상태 확인**:
-   ```bash
-   python main.py --test
-   ```
-
-터미널 창에 `"Zotero connection successful"`과 `"OpenAlex connection successful"` 메시지가 모두 출력되면 준비가 완료된 것입니다.
-
-
-## 사용 방법
-
-### 1. 모던 데스크톱 GUI 실행 (기본 권장)
-
-`run.bat` 파일을 더블클릭하거나, 터미널에서 아래 명령어를 실행합니다.
-
-```bash
-python main.py
-# 또는
-python gui.py
+```ini
+ZOTERO_USER_ID=1234567                   # https://www.zotero.org/settings/keys 에 적힌 숫자 ID
+ZOTERO_API_KEY=본인의_API_키              # 동일 페이지에서 [Create new private key]로 생성
+OBSIDIAN_VAULT_PATH=C:\Users\이름\Vault  # 내 Obsidian 볼트 폴더의 절대 경로
 ```
 
-- **차분하고 모던한 다크 테마 UI**가 실행됩니다.
-- Zotero 컬렉션을 시각적 트리 및 검색으로 쉽게 탐색하고 선택할 수 있습니다.
-- API 연결 상태 테스트, `.env` 환경 설정 저장/수정, Obsidian Vault 폴더 탐색기(`Browse...`)를 지원합니다.
-- `▶ Build Citation Network` 버튼 하나로 실시간 진행률, 로그, 통계 지표를 확인하며 인용 네트워크를 구축할 수 있습니다.
-- 완료 후 `Open Vault ↗` 버튼으로 결과 노트를 바로 열어볼 수 있습니다.
+### 3단계: 프로그램 실행
+- **윈도우**: **`run.bat`** 파일을 더블클릭합니다.
+- **또는 터미널**:
+  ```bash
+  python main.py
+  ```
 
-### 2. 터미널 CLI 모드로 실행
+---
 
-기존 콘솔 기반으로 실행하고 싶다면 `--cli` 옵션을 지정합니다.
+## 화면 사용법 (4개 패널 한눈에 보기)
 
-```bash
-# 콘솔 대화형 트리 선택
-python main.py --cli
+화면 상단의 버튼(`[Collections]`, `[Console & Run]`, `[Graph View]`, `[Citation Index]`)으로 원하는 패널을 접거나 펼칠 수 있으며, 패널 사이의 분할선을 마우스로 드래그하여 크기를 자유롭게 조절할 수 있습니다.
 
-# 특정 컬렉션 바로 처리 (하위 폴더 자동 포함)
-python main.py --collection "Machine Learning"
-
-# API 연결 테스트만 수행
-python main.py --test
+```
+[Collections]          [Console & Run]       [Graph View]            [Citation Index]
++--------------------+---------------------+-----------------------+---------------------+
+| 1. 폴더 선택       | 2. 빌드 시작        | 3. 인터랙티브 그래프  | 4. 인덱스 & 조테로  |
+|                    |                     |                       |                     |
+| - My Library       | [Build Network]     | - 노드 드래그 (스프링)| - 논문 상세 서지    |
+|   ├─ AI 논문       | - 실시간 로그 콘솔  | - 마우스 휠 줌/패닝   | - Cites [1], [2]... |
+|   └─ 생명과학      | - 3단계 진행률      | - Settings 슬라이더   | - [Open in Zotero]  |
++--------------------+---------------------+-----------------------+---------------------+
 ```
 
-    Citation Network/
-    │
-    ├── run.bat                   실행 파일. 더블클릭으로 바로 실행됩니다.
-    │
-    ├── main.py                   프로그램의 시작점. 폴더 선택, 전체 흐름 제어.
-    │
-    ├── .env                      API 키와 경로 설정 파일.
-    │                             이 파일은 절대 GitHub에 올리지 마세요.
-    │
-    ├── requirements.txt          필요한 Python 패키지 목록.
-    │                             처음 설치 시 한 번만 실행하면 됩니다.
-    │
-    ├── cache/
-    │   └── openalex_cache.json   OpenAlex 조회 결과를 저장해두는 캐시.
-    │                             두 번째 실행부터는 이 파일 덕분에 훨씬 빠릅니다.
-    │
-    └── src/
-        ├── zotero_client.py      Zotero에서 논문 목록과 메타데이터를 가져옵니다.
-        ├── openalex_client.py    OpenAlex에서 논문 간 인용 관계를 조회합니다.
-        └── obsidian_writer.py    논문 정보를 Obsidian 마크다운 노트로 저장합니다.
+1. **패널 1: Collections (좌측)**
+   - 인용 관계를 분석할 Zotero 폴더를 클릭하여 선택합니다. (라이브러리 전체는 최상단 **`My Library`** 선택)
+2. **패널 2: Console & Run (중앙 좌측)**
+   - **`Build Citation Network`** 버튼을 누릅니다. 실시간 3단계 진행률과 분석 로그가 표시됩니다.
+3. **패널 3: Graph View (중앙 우측)**
+   - 안티앨리어싱 고해상도 벡터 그래픽으로 완성된 논문망을 자유롭게 탐색합니다.
+   - **조작**: 마우스 휠로 확대/축소, 바탕 드래그로 화면 이동.
+   - **물리 시뮬레이션**: 특정 노드를 드래그하면 연결된 논문들이 탄성 스프링에 따라 자연스럽게 딸려옵니다.
+   - **설정**: 우측 상단 **`Settings & Palette`**를 눌러 노드 크기, 연결 거리, 반발력 슬라이더를 조절하거나, 2D 스펙트럼 색상판에서 원하는 색상을 클릭하여 바꿀 수 있습니다.
+4. **패널 4: Citation Index (우측)**
+   - 상단 헤더의 **`Citation Index`** 버튼을 누르면 열립니다.
+   - 선택한 논문이 참고한 문헌(**Cites**)과 이 논문을 인용한 문헌(**Cited By**)을 `[1]`, `[2]`... 번호 매김 카드로 보여줍니다.
+   - 카드를 클릭하면 그래프 뷰에서 해당 논문으로 즉시 이동합니다.
+   - **`Open in Zotero`** 버튼을 누르면 조테로 데스크톱 앱이 열리면서 **해당 논문이 즉시 파란색으로 선택/하이라이트**됩니다.
 
+---
 
-## 결과물 확인 방법
+## Obsidian(옵시디언)에서 결과 확인하기
 
-노트는 Obsidian 볼트 내 `.env` 파일에 설정한 폴더(기본값: `Citation Network`) 안에 생성됩니다.
+빌드가 완료되면 옵시디언 볼트 내에 선택한 컬렉션 이름의 폴더로 노트들이 자동 생성됩니다.
 
-각 폴더 안에는 아래 두 종류의 파일이 만들어집니다.
+1. **Obsidian**을 실행합니다.
+2. `Ctrl + G` (Mac은 `Cmd + G`)를 눌러 **Graph View**를 엽니다.
+3. 우측 상단 그래프 필터에 `path:"[선택한 폴더 이름]"`을 입력합니다.
+4. 그래프 설정의 **Display** 항목에서 **Arrows(화살표)**를 켜면 인용 방향(`A ──> B`: A가 B를 인용함)을 화살표로 한눈에 볼 수 있습니다.
+5. 각 논문 노트 내부의 `[Open in Zotero]` 링크를 누르면 조테로 원본 항목으로 즉시 점프합니다.
 
-- `논문citekey.md` : 개별 논문 노트. 인용한 논문과 인용받은 논문이 링크로 연결됩니다.
-- `_Index.md` : 해당 폴더의 전체 논문 목록 표.
+---
 
-Obsidian에서 Graph View를 열면 논문들 사이의 인용 관계가 시각적으로 표시됩니다.
-Graph View에서 필터 입력란에 `path:"설정한 폴더명"` (예: `path:"Citation Network"`)을 입력하면 이 도구로 만든 노트만 표시됩니다.
+## 유용한 팁 & 자주 묻는 질문 (FAQ)
 
-> [!TIP]
-> **인용 방향 화살표 표시 (v1.0.1+)**: Obsidian 그래프 뷰 설정에서 **화살표(Arrows)** 기능을 활성화해 주세요. 화살표는 인용하는 논문에서 피인용 논문 방향으로 연결됩니다 (A ──> B는 A 논문이 B 논문을 인용했다는 의미입니다). 나를 인용한 논문(`Cited by`) 섹션은 그래프 뷰에서 양방향 화살표가 그려져 관계가 왜곡되는 것을 막기 위해 위키링크가 아닌 일반 텍스트로 표기됩니다.
+- **논문에 DOI가 꼭 필요한가요?** 네, OpenAlex는 DOI를 기반으로 인용 데이터를 찾습니다. Zotero에서 논문에 DOI를 많이 채워둘수록 더 풍성한 인용망이 연결됩니다.
+- **같은 폴더에 다시 실행해도 안전한가요?** 네! 다시 실행해도 인용 관계만 최신으로 갱신되며, 자동 생성 영역 아래에 사용자가 직접 적은 메모나 코멘트는 삭제되지 않고 그대로 보존됩니다.
+- **내 개인정보는 안전한가요?** `.env` 파일에 저장된 API 키는 오직 내 컴퓨터에서만 작동하며 외부나 GitHub에 절대 공유되지 않습니다.
+- **터미널 콘솔 모드로 쓰고 싶다면?** 터미널에서 `python main.py --cli`를 실행하면 콘솔 대화형으로 사용할 수 있습니다.
 
+---
 
-## 알아두면 좋은 것
+## 라이선스
 
-- DOI가 없는 논문은 인용 관계를 조회할 수 없습니다. Zotero에서 DOI를 추가해 두면 더 많은 연결이 만들어집니다.
-- OpenAlex는 무료 학술 데이터베이스입니다. 별도 회원가입이나 API 키가 필요하지 않습니다.
-- 같은 폴더를 다시 실행하면 노트가 업데이트됩니다. 직접 작성한 내용 아래에 새 섹션이 덮어쓰이는 방식이므로 노트에 메모를 추가해도 됩니다.
-- `.env` 파일에는 개인 API 키가 들어있습니다. GitHub에 올라가지 않도록 `.gitignore`에 등록되어 있습니다.
+MIT License. 학술 연구 및 개인 연구 목적으로 자유롭게 사용하실 수 있습니다.

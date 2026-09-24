@@ -9,10 +9,10 @@ from datetime import datetime
 
 class ObsidianWriter:
 
-    def __init__(self, vault_path: str, citation_folder: str = 'Citation Network'):
+    def __init__(self, vault_path: str, citation_folder: str = ''):
         self.vault_path      = vault_path
-        self.citation_folder = citation_folder
-        self.base_path       = os.path.join(vault_path, citation_folder)
+        self.citation_folder = citation_folder or ''
+        self.base_path       = os.path.join(vault_path, self.citation_folder) if self.citation_folder else vault_path
         self.today           = datetime.now().strftime('%Y-%m-%d')
 
     # ------------------------------------------------------------------ #

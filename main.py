@@ -1,7 +1,7 @@
 """
 Citation Network Builder
 ========================
-Version: 1.1.0
+Version: 1.2.0
 
 python main.py                             -> Collection selection tree
 python main.py --collection "Folder Name"  -> Process folder immediately (includes subfolders)

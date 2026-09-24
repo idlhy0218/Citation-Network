@@ -1,137 +1,93 @@
-# Citation Network Builder v1.1.0
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white) [![Stars](https://img.shields.io/github/stars/idlhy0218/Citation-Network?style=flat-square)](https://github.com/idlhy0218/Citation-Network/stargazers) ![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)
+# Citation Network Builder v1.2.0
 
-This tool analyzes citation relationships between papers stored in Zotero using the free OpenAlex academic database API, and automatically converts them into linked Obsidian notes.
+![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white) ![Version](https://img.shields.io/badge/version-1.2.0-8E7CC3?style=flat-square) ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)
 
-### Workflow
+**Citation Network Builder** analyzes citation relationships between papers in your **Zotero** library using the free **OpenAlex** academic database, automatically generates linked notes in **Obsidian**, and provides an embedded **interactive 2D citation graph** with one-click deep links back to desktop Zotero.
 
-1. Zotero: Retrieves paper metadata and collection (folder) structures from your Zotero library.
-2. OpenAlex: Queries the OpenAlex database using paper DOIs to determine citation relationships within the selected collections.
-3. Obsidian: Generates or updates individual paper notes in your vault, complete with wiki-links. You can visualize the citation network using Obsidian's built-in Graph View.
+---
 
+## Quick Start (3 Steps)
 
-
-## Prerequisites
-
-- **Python 3.9 or higher** (https://python.org)
-  - > [!IMPORTANT]
-  > During Python installation, make sure to check the box **"Add python.exe to PATH"** at the bottom. If you skip this, your terminal will fail to recognize the `python` command.
-- **Zotero account and API Key**
-- **Obsidian** (https://obsidian.md)
-
-
-## Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/idlhy0218/Citation-Network.git
-   cd Citation-Network
-   ```
-
-2. **Install dependencies**:
+### Step 1: Install Python & Dependencies
+1. Download and install **Python 3.9+** from [python.org](https://python.org).
+   > [!IMPORTANT]
+   > On Windows, check the box **"Add python.exe to PATH"** at the bottom of the installer.
+2. Open your terminal in the project folder and run:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Configure environment variables**:
-   Duplicate `.env.example` as `.env` and configure the following required fields:
-   * **ZOTERO_USER_ID**: Find your ID at [Zotero API Settings](https://www.zotero.org/settings/keys) under "Your userID for API calls".
-   * **ZOTERO_API_KEY**: Create a private key at [Zotero API Settings](https://www.zotero.org/settings/keys).
-   * **OBSIDIAN_VAULT_PATH**: Absolute path to your Obsidian vault.
+### Step 2: Configure `.env` (Only 3 Settings)
+Duplicate `.env.example` and rename it to `.env`. Fill in these 3 lines:
 
-   ```ini
-   # Required Settings
-   ZOTERO_USER_ID=Your_Zotero_User_ID
-   ZOTERO_API_KEY=Your_Zotero_API_Key
-   OBSIDIAN_VAULT_PATH=C:\Users\Username\Documents\MyVault
-
-   # Optional Settings
-   ZOTERO_LIBRARY_TYPE=user                 # Change to 'group' for group libraries
-   CITATION_NETWORK_FOLDER=Citation Network  # Folder name in Obsidian Vault
-   OPENALEX_EMAIL=your_email@domain.com      # Improves OpenAlex query speed
-   ```
-
-4. **Test the connection**:
-   ```bash
-   python main.py --test
-   ```
-
-If you see `"Zotero connection successful"` and `"OpenAlex connection successful"`, you are ready to go.
-
-
-## How to Use
-
-### 1. Modern Desktop GUI (Default / Recommended)
-
-Double-click `run.bat` or run the following command in your terminal:
-
-```bash
-python main.py
-# or
-python gui.py
+```ini
+ZOTERO_USER_ID=1234567                   # Your numeric ID from https://www.zotero.org/settings/keys
+ZOTERO_API_KEY=your_private_key_here     # Create a key at https://www.zotero.org/settings/keys
+OBSIDIAN_VAULT_PATH=C:\Users\Name\Vault  # Absolute path to your Obsidian Vault
 ```
 
-- **Subdued & Sleek Dark Mode UI** is launched.
-- Visually browse and search your Zotero collection hierarchy with folder/item icons.
-- One-click API connection test, `.env` settings management, and Obsidian Vault path browser.
-- Real-time 3-step progress bar, live execution logs, and network metrics (Papers, DOIs, Edges, Notes).
-- Quick button to open the generated Obsidian Vault folder directly.
+### Step 3: Run the App
+- **Windows**: Double-click **`run.bat`**
+- **Or via Terminal**:
+  ```bash
+  python main.py
+  ```
 
-### 2. Terminal CLI Mode
+---
 
-If you prefer the command line, specify `--cli`:
+## How to Use the GUI (4 Panels)
 
-```bash
-# Interactive tree prompt in terminal
-python main.py --cli
+The app features a wide 4-column layout where each panel can be resized or collapsed using the top header buttons:
 
-# Process a specific collection immediately
-python main.py --collection "Machine Learning"
-
-# Test API connections only
-python main.py --test
+```
+[Collections]          [Console & Run]       [Graph View]            [Citation Index]
++--------------------+---------------------+-----------------------+---------------------+
+| 1. Select Folder   | 2. Click Build      | 3. Explore Graph      | 4. Inspect & Zotero |
+|                    |                     |                       |                     |
+| - My Library       | [Build Network]     | - Drag nodes (spring) | - Paper details     |
+|   ├─ AI Papers     | - Real-time logs    | - Zoom & pan          | - Cites [1], [2]... |
+|   └─ Biology       | - Progress bar      | - Settings & Palette  | - [Open in Zotero]  |
++--------------------+---------------------+-----------------------+---------------------+
 ```
 
-    Citation Network/
-    │
-    ├── run.bat                   Execution file. Double-click to start quickly.
-    │
-    ├── main.py                   Entry point of the program. Handles folder selection.
-    │
-    ├── .env                      Configuration file for API keys and paths.
-    │                             Never share this file or upload it to GitHub.
-    │
-    ├── requirements.txt          List of required Python libraries.
-    │                             Only needs to be run once during installation.
-    │
-    ├── cache/
-    │   └── openalex_cache.json   Cache file for OpenAlex query results.
-    │                             Makes subsequent runs significantly faster.
-    │
-    └── src/
-        ├── zotero_client.py      Retrieves paper lists and metadata from Zotero.
-        ├── openalex_client.py    Fetches citation connections using OpenAlex.
-        └── obsidian_writer.py    Writes paper data as markdown files to Obsidian.
+1. **Panel 1: Collections (Left)**
+   - Click to select the Zotero folder you want to analyze (or choose **`My Library`** for all papers).
+2. **Panel 2: Console & Run (Center-Left)**
+   - Click **`Build Citation Network`**. Watch the real-time progress bar and log terminal.
+3. **Panel 3: Graph View (Center-Right)**
+   - View your citation network rendered in high definition.
+   - **Navigate**: Mouse wheel to zoom, drag background to pan.
+   - **Interact**: Drag any node to pull connected papers via elastic physics springs.
+   - **Customize**: Click **`Settings & Palette`** to adjust Node Size, Link Distance, Repel Force, or pick custom colors from the 2D spectrum picker.
+4. **Panel 4: Citation Index (Right)**
+   - Click the **`Citation Index`** button in the top header to toggle this panel.
+   - Displays the selected paper's outgoing references (**Cites**) and incoming citations (**Cited By**) in numbered cards (`[1]`, `[2]`, ...).
+   - Click any card to hop directly to that paper in the graph.
+   - Click **`Open in Zotero`** to immediately focus and highlight the paper in desktop Zotero!
 
+---
 
-## Viewing the Output
+## Viewing in Obsidian
 
-Notes are generated under the folder specified by `CITATION_NETWORK_FOLDER` in your `.env` file (defaults to `Citation Network`) inside your Obsidian Vault.
+Notes are automatically organized inside your vault under a folder matching your Zotero collection name:
 
-Inside each collection folder, you will find:
+1. Open your vault in **Obsidian**.
+2. Press `Ctrl + G` (or `Cmd + G` on Mac) to open **Graph View**.
+3. In Graph View settings, set the filter to `path:"[Your Collection Name]"`.
+4. Turn on **Arrows** under Display settings to see citation flow (`A ──> B` means paper A cites paper B).
+5. Inside each note, click `[Open in Zotero]` to jump back to the desktop reference.
 
-- `citekey.md`: Individual paper notes containing references to other papers.
-- `_Index.md`: A summary table of all papers in that folder.
+---
 
-Open Graph View in Obsidian to see the network. You can filter the graph by entering `path:"Your Folder Name"` (e.g. `path:"Citation Network"`) in the graph filter bar to show only these citation notes.
+## Helpful Tips & FAQ
 
-> [!TIP]
-> **Directional Citation Arrows (v1.0.1+)**: Under Obsidian Graph View settings, enable **Arrows**. The arrows point from the citing paper to the cited paper (A ──> B means paper A cites paper B). The "Cited by" section inside each note lists citing papers as plain text to prevent cluttering the graph with bidirectional arrows.
+- **Do papers need DOIs?** Yes, OpenAlex matches citations via DOIs. Papers with DOIs in Zotero will automatically connect.
+- **Can I re-run on the same folder?** Yes! Re-running safely updates citations. Any personal notes written below the auto-generated section are preserved.
+- **Is my data safe?** Yes. Your `.env` API keys stay entirely on your local machine and are never shared.
+- **Prefer the command line?** Run `python main.py --cli` for interactive terminal mode.
 
+---
 
-## Good to Know
+## License
 
-- Papers must have a DOI to fetch citation data. Adding DOIs in Zotero yields more connections.
-- OpenAlex is a free scholastic database and does not require registration or API keys.
-- Re-running the script on the same folder will update the notes. Custom comments or notes added by you will be preserved as long as you write them below the auto-generated section.
-- The `.env` file contains your private API keys. It is added to `.gitignore` so it will not be uploaded to GitHub.
+MIT License. Free for academic and personal research use.
