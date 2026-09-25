@@ -1,9 +1,15 @@
-# API 키 (절대 커밋 금지)
+# API Keys & Secrets (Never commit)
 .env
+.env.*
+!.env.example
+*.pem
+*.key
 
-# 캐시
-cache/
+# Cache & Logs
+cache/*
+!cache/.gitkeep
 logs/
+*.log
 
 # Python
 __pycache__/

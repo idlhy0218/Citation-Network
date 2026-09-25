@@ -22,7 +22,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import customtkinter as ctk
 
-from src.graph_render import GraphRenderer
+from src.gui.graph_render import GraphRenderer
 
 GRAPH_THEME = {
     "canvas_bg": "#F7F7FA",
@@ -112,6 +112,11 @@ class GraphView(ctk.CTkFrame):
         self.spec_h = 24
         self.spec_img = self._generate_spectrum_image(self.spec_w, self.spec_h)
         self.spec_photo = ImageTk.PhotoImage(self.spec_img)
+
+        # Smooth resize debouncing state
+        self._last_canvas_w = 0
+        self._last_canvas_h = 0
+        self._resize_redraw_id = None
 
         self._init_ui()
 
@@ -374,7 +379,7 @@ class GraphView(ctk.CTkFrame):
         self.canvas.grid(row=2, column=0, sticky="nsew", padx=6, pady=2)
 
         # Mouse event bindings
-        self.canvas.bind("<Configure>", lambda e: self.redraw())
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
         self.canvas.bind("<ButtonPress-1>", self._on_mouse_down)
         self.canvas.bind("<B1-Motion>", self._on_mouse_drag)
         self.canvas.bind("<ButtonRelease-1>", self._on_mouse_up)
@@ -1292,7 +1297,8 @@ class GraphView(ctk.CTkFrame):
         self.offset_x = -n["x"] * self.zoom
         self.offset_y = -n["y"] * self.zoom
         self.wake_simulation(energy=0.35)
-        self.redraw()
+        if not self.is_animating:
+            self.redraw()
 
     def _on_mouse_drag(self, event):
         dx = event.x - self.drag_start_x
@@ -1365,4 +1371,20 @@ class GraphView(ctk.CTkFrame):
 
     def _on_search_changed(self):
         self.search_query = self.search_var.get()
+        self.redraw()
+
+    def _on_canvas_configure(self, event):
+        w = event.width
+        h = event.height
+        if abs(w - self._last_canvas_w) < 2 and abs(h - self._last_canvas_h) < 2:
+            return
+        self._last_canvas_w = w
+        self._last_canvas_h = h
+        if self._resize_redraw_id is not None:
+            self.after_cancel(self._resize_redraw_id)
+        # Throttled at 16ms for buttery 60fps divider resizing
+        self._resize_redraw_id = self.after(16, self._do_resize_redraw)
+
+    def _do_resize_redraw(self):
+        self._resize_redraw_id = None
         self.redraw()

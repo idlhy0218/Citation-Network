@@ -1,5 +1,5 @@
 """
-src/zotero_client.py
+src/core/zotero_client.py
 Fetches collection and paper metadata from Zotero Web API.
 """
 import re

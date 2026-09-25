@@ -1,5 +1,5 @@
 """
-src/openalex_client.py
+src/core/openalex_client.py
 Fetches paper citation relationships using the OpenAlex API.
 - DOI -> OpenAlex Work (includes referenced_works)
 - Saves results to a JSON cache to avoid duplicate API requests.

@@ -1,5 +1,5 @@
 """
-src/obsidian_writer.py
+src/core/obsidian_writer.py
 Writes paper metadata + citation relationships as Obsidian markdown notes.
 """
 import os

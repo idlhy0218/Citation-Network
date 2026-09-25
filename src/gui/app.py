@@ -24,15 +24,15 @@ if sys.platform == "win32":
         except Exception:
             pass
 
+from PIL import Image
 import customtkinter as ctk
 from dotenv import load_dotenv, set_key
 
-# Import core clients
-sys.path.insert(0, os.path.dirname(__file__))
-from src.zotero_client import ZoteroClient
-from src.openalex_client import OpenAlexClient
-from src.obsidian_writer import ObsidianWriter
-from src.graph_view import GraphView
+# Import core clients and GUI components
+from src.core.zotero_client import ZoteroClient
+from src.core.openalex_client import OpenAlexClient
+from src.core.obsidian_writer import ObsidianWriter
+from src.gui.graph_view import GraphView
 
 
 # ----------------------------------------------------------------------
@@ -71,11 +71,17 @@ class CitationNetworkGUI(ctk.CTk):
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("blue")
 
-        # Runtime State
-        self.env_path = os.path.join(os.path.dirname(__file__), '.env')
-        self.cache_file = os.path.join(os.path.dirname(__file__), 'cache', 'openalex_cache.json')
+        # Runtime State & Paths
+        workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.assets_dir = os.path.join(workspace_root, 'assets')
+        self.env_path = os.path.join(workspace_root, '.env')
+        self.cache_file = os.path.join(workspace_root, 'cache', 'openalex_cache.json')
         load_dotenv(self.env_path)
 
+        # Cross-platform window and taskbar icon
+        self._setup_window_icon()
+
+        self.generate_obsidian_notes = tk.BooleanVar(value=os.getenv("GENERATE_OBSIDIAN_NOTES", "true").lower() in ("true", "1", "yes"))
         self.tree_data = {}
         self.roots_data = []
         self.expanded_keys = {"__root__"}
@@ -92,12 +98,83 @@ class CitationNetworkGUI(ctk.CTk):
         self.current_all_papers = {}
         self.current_cites = {}
         self.current_cited_by = {}
+        self._meta_box_visible = False
 
         self._init_ui()
         self._load_config_to_inputs()
         
         # Initial check in background
         self.after(300, self._auto_load_tree)
+
+    # ------------------------------------------------------------------
+    # Cross-Platform Icon & Branding Setup
+    # ------------------------------------------------------------------
+    def _windows_set_titlebar_icon(self):
+        """Override CustomTkinter's default 200ms timer callback so it NEVER overwrites
+        our custom high-DPI logo with CustomTkinter's default blue circle icon."""
+        pass
+
+    def _setup_window_icon(self):
+        """Cross-platform high-DPI window, taskbar, and dock icon setup (Windows, macOS, Linux)."""
+        ico_path = os.path.join(self.assets_dir, "icon.ico")
+        
+        # 1. Prevent CustomTkinter from falling back to its blue circle icon
+        self._iconbitmap_method_called = True
+
+        # 2. Windows-specific: Explicit AppUserModelID for taskbar separation & iconbitmap
+        if sys.platform.startswith("win"):
+            try:
+                import ctypes
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                    "citationnetwork.desktop.builder.1.2"
+                )
+            except Exception:
+                pass
+
+            if os.path.exists(ico_path):
+                try:
+                    self.iconbitmap(ico_path)
+                except Exception:
+                    pass
+
+        # 3. Multi-resolution sharp PhotoImages for wm_iconphoto
+        # Providing multiple resolutions (16, 20, 24, 32, 40, 48, 64, 96, 128, 256)
+        # allows Windows/macOS/Linux window managers and high-DPI taskbars to pick
+        # the crystal-clear native raster matching the exact monitor scaling without blur.
+        self._app_icons = []
+        icons_dir = os.path.join(self.assets_dir, "icons")
+        sizes = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256]
+
+        if os.path.exists(icons_dir):
+            for s in sizes:
+                icon_file = os.path.join(icons_dir, f"icon_{s}.png")
+                if os.path.exists(icon_file):
+                    try:
+                        self._app_icons.append(tk.PhotoImage(file=icon_file))
+                    except Exception:
+                        pass
+
+        # Fallback to base logos if icons folder isn't populated
+        if not self._app_icons:
+            for fallback in ["logo_hi.png", "logo.png", "logo_icon.png"]:
+                f_path = os.path.join(self.assets_dir, fallback)
+                if os.path.exists(f_path):
+                    try:
+                        self._app_icons.append(tk.PhotoImage(file=f_path))
+                    except Exception:
+                        pass
+
+        def _apply_iconphoto():
+            if self._app_icons:
+                try:
+                    # wm_iconphoto accepts variable arguments of different sizes
+                    self.wm_iconphoto(True, *self._app_icons)
+                except Exception:
+                    pass
+
+        _apply_iconphoto()
+        # Re-apply after 250ms to ensure window manager persists our razor-sharp icons
+        self.after(250, _apply_iconphoto)
 
     # ------------------------------------------------------------------
     # UI Layout Initialization
@@ -129,6 +206,21 @@ class CitationNetworkGUI(ctk.CTk):
         # Title & Subtitle (Left)
         title_box = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_box.grid(row=0, column=0, padx=16, pady=6, sticky="w")
+
+        # In-App Inline Logo Icon
+        logo_icon_path = os.path.join(self.assets_dir, "logo_icon.png")
+        if os.path.exists(logo_icon_path):
+            try:
+                pil_logo = Image.open(logo_icon_path)
+                self._header_logo_img = ctk.CTkImage(
+                    light_image=pil_logo,
+                    dark_image=pil_logo,
+                    size=(26, 26)
+                )
+                logo_label = ctk.CTkLabel(title_box, text="", image=self._header_logo_img)
+                logo_label.pack(side="left", padx=(0, 8))
+            except Exception:
+                pass
 
         title_label = ctk.CTkLabel(
             title_box,
@@ -483,8 +575,28 @@ class CitationNetworkGUI(ctk.CTk):
         self.combo_lib_type.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         row += 1
 
+        # Generate Obsidian Notes Option
+        self.chk_gen_notes_settings = ctk.CTkCheckBox(
+            scroll,
+            text="Generate Obsidian Notes (.md)",
+            variable=self.generate_obsidian_notes,
+            font=ctk.CTkFont(size=12, weight="bold"),
+            text_color=THEME["text_primary"],
+            fg_color=THEME["accent"],
+            hover_color=THEME["accent_hover"],
+            command=self._on_gen_notes_toggled
+        )
+        self.chk_gen_notes_settings.grid(row=row, column=0, columnspan=2, sticky="w", pady=(8, 4))
+        row += 1
+
         # Obsidian Vault Path
-        ctk.CTkLabel(scroll, text="Obsidian Vault Path *", font=ctk.CTkFont(size=12), text_color=THEME["text_muted"]).grid(row=row, column=0, sticky="w", pady=(6, 2))
+        self.lbl_vault_path = ctk.CTkLabel(
+            scroll,
+            text="Obsidian Vault Path (Optional if notes disabled)",
+            font=ctk.CTkFont(size=12),
+            text_color=THEME["text_muted"]
+        )
+        self.lbl_vault_path.grid(row=row, column=0, sticky="w", pady=(6, 2))
         row += 1
         vault_box = ctk.CTkFrame(scroll, fg_color="transparent")
         vault_box.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 4))
@@ -575,12 +687,12 @@ class CitationNetworkGUI(ctk.CTk):
             border_width=1,
             border_color=THEME["card_border"]
         )
-        self.mid_card.grid_rowconfigure(2, weight=1)
+        self.mid_card.grid_rowconfigure(3, weight=1)
         self.mid_card.grid_columnconfigure(0, weight=1)
 
         # 1. Action Controls Header (Start / Cancel / Open Vault)
         ctrl_frame = ctk.CTkFrame(self.mid_card, fg_color="transparent")
-        ctrl_frame.grid(row=0, column=0, sticky="ew", padx=12, pady=(10, 6))
+        ctrl_frame.grid(row=0, column=0, sticky="ew", padx=12, pady=(10, 4))
         ctrl_frame.grid_columnconfigure(0, weight=1)
 
         self.btn_start = ctk.CTkButton(
@@ -625,9 +737,26 @@ class CitationNetworkGUI(ctk.CTk):
         )
         self.btn_open_vault.grid(row=0, column=2)
 
-        # 2. Progress & Step Tracker
+        # 2. Option Checkbox (Generate Obsidian Notes)
+        opt_box = ctk.CTkFrame(self.mid_card, fg_color="transparent")
+        opt_box.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 6))
+
+        self.chk_gen_notes_mid = ctk.CTkCheckBox(
+            opt_box,
+            text="Generate Obsidian Markdown Notes (.md)",
+            variable=self.generate_obsidian_notes,
+            font=ctk.CTkFont(size=11),
+            text_color=THEME["text_muted"],
+            fg_color=THEME["accent"],
+            hover_color=THEME["accent_hover"],
+            height=18,
+            command=self._on_gen_notes_toggled
+        )
+        self.chk_gen_notes_mid.pack(side="left")
+
+        # 3. Progress & Step Tracker
         prog_frame = ctk.CTkFrame(self.mid_card, fg_color="transparent")
-        prog_frame.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 6))
+        prog_frame.grid(row=2, column=0, sticky="ew", padx=12, pady=(0, 6))
         prog_frame.grid_columnconfigure(0, weight=1)
 
         self.lbl_progress_step = ctk.CTkLabel(
@@ -662,7 +791,7 @@ class CitationNetworkGUI(ctk.CTk):
         )
         self.lbl_metrics.grid(row=2, column=0, sticky="w", pady=(4, 0))
 
-        # 3. Live Log Console (Expands to fill all vertical space!)
+        # 4. Live Log Console (Expands to fill all vertical space!)
         log_frame = ctk.CTkFrame(
             self.mid_card,
             fg_color=THEME["log_bg"],
@@ -670,7 +799,7 @@ class CitationNetworkGUI(ctk.CTk):
             border_width=1,
             border_color=THEME["card_border"]
         )
-        log_frame.grid(row=2, column=0, sticky="nsew", padx=12, pady=(2, 8))
+        log_frame.grid(row=3, column=0, sticky="nsew", padx=12, pady=(2, 8))
         log_frame.grid_rowconfigure(1, weight=1)
         log_frame.grid_columnconfigure(0, weight=1)
 
@@ -931,14 +1060,40 @@ class CitationNetworkGUI(ctk.CTk):
         self.index_container = tk.Frame(self.index_canvas, bg="#F7F7FA")
         self.index_canvas_win = self.index_canvas.create_window((0, 0), window=self.index_container, anchor="nw")
 
-        self.index_container.bind("<Configure>", lambda e: self.index_canvas.configure(scrollregion=self.index_canvas.bbox("all")))
-        self.index_canvas.bind("<Configure>", lambda e: self.index_canvas.itemconfig(self.index_canvas_win, width=e.width))
+        self._last_index_canvas_w = 0
+        self._scrollregion_timer_id = None
+        self._card_wraplength = 270
+
+        def _update_scrollregion():
+            self._scrollregion_timer_id = None
+            try:
+                self.index_canvas.configure(scrollregion=self.index_canvas.bbox("all"))
+            except Exception:
+                pass
+
+        def _on_index_container_configure(e):
+            if self._scrollregion_timer_id is not None:
+                self.after_cancel(self._scrollregion_timer_id)
+            self._scrollregion_timer_id = self.after(25, _update_scrollregion)
+
+        def _on_index_canvas_configure(e):
+            if abs(e.width - self._last_index_canvas_w) >= 3:
+                self._last_index_canvas_w = e.width
+                self.index_canvas.itemconfig(self.index_canvas_win, width=e.width)
+                new_wrap = max(180, e.width - 65)
+                if abs(new_wrap - self._card_wraplength) >= 15:
+                    self._card_wraplength = new_wrap
+                    self._update_all_card_wraplengths(new_wrap)
+
+        self.index_container.bind("<Configure>", _on_index_container_configure)
+        self.index_canvas.bind("<Configure>", _on_index_canvas_configure)
 
         def _on_index_mousewheel(e):
             self.index_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+            return "break"
 
-        self.index_canvas.bind("<MouseWheel>", _on_index_mousewheel)
-        self.index_container.bind("<MouseWheel>", _on_index_mousewheel)
+        self.index_scroll_frame.bind("<Enter>", lambda e: self.index_canvas.bind_all("<MouseWheel>", _on_index_mousewheel))
+        self.index_scroll_frame.bind("<Leave>", lambda e: self.index_canvas.unbind_all("<MouseWheel>"))
 
         # Persistent Section Layout inside index_container
         # 3A. Cites Section
@@ -989,16 +1144,19 @@ class CitationNetworkGUI(ctk.CTk):
             self.display_paper_detail(doi)
 
     def display_paper_detail(self, doi: str | None):
-        self.selected_doi_in_detail = doi
-
         if not doi:
-            self.meta_content_box.pack_forget()
-            self.meta_empty_box.pack(fill="x", padx=10, pady=8)
+            self.selected_doi_in_detail = None
+            if self._meta_box_visible:
+                self.meta_content_box.pack_forget()
+                self.meta_empty_box.pack(fill="x", padx=10, pady=8)
+                self._meta_box_visible = False
             self.sec_cites_frame.pack_forget()
             self.sec_sep.pack_forget()
             self.sec_cited_by_frame.pack_forget()
             self.index_canvas.yview_moveto(0.0)
             return
+
+        self.selected_doi_in_detail = doi
 
         # Fetch paper data
         paper = {}
@@ -1024,8 +1182,10 @@ class CitationNetworkGUI(ctk.CTk):
             author_meta += f" — {journal}"
 
         # 1. Update Persistent Header Widgets (Ultra-fast in-place)
-        self.meta_empty_box.pack_forget()
-        self.meta_content_box.pack(fill="x", padx=10, pady=8)
+        if not self._meta_box_visible:
+            self.meta_empty_box.pack_forget()
+            self.meta_content_box.pack(fill="x", padx=10, pady=8)
+            self._meta_box_visible = True
 
         self.lbl_meta_citekey.configure(text=f"[{citekey}]")
         self.lbl_meta_year.configure(text=f"  •  {year}" if year else "")
@@ -1047,7 +1207,8 @@ class CitationNetworkGUI(ctk.CTk):
         )
 
         # 2. Render Cites List
-        self.sec_cites_frame.pack(fill="x", padx=4, pady=(4, 2))
+        if not self.sec_cites_frame.winfo_ismapped():
+            self.sec_cites_frame.pack(fill="x", padx=4, pady=(4, 2))
         self._render_card_pool(
             container_frame=self.cites_cards_frame,
             pool=self._cites_card_pool,
@@ -1057,10 +1218,12 @@ class CitationNetworkGUI(ctk.CTk):
         )
 
         # 3. Separator
-        self.sec_sep.pack(fill="x", padx=4, pady=8)
+        if not self.sec_sep.winfo_ismapped():
+            self.sec_sep.pack(fill="x", padx=4, pady=8)
 
         # 4. Render Cited By List
-        self.sec_cited_by_frame.pack(fill="x", padx=4, pady=(2, 4))
+        if not self.sec_cited_by_frame.winfo_ismapped():
+            self.sec_cited_by_frame.pack(fill="x", padx=4, pady=(2, 4))
         self._render_card_pool(
             container_frame=self.cited_by_cards_frame,
             pool=self._cited_by_card_pool,
@@ -1071,6 +1234,12 @@ class CitationNetworkGUI(ctk.CTk):
 
         self.index_canvas.yview_moveto(0.0)
 
+    def _update_all_card_wraplengths(self, new_wrap: int):
+        for pool in (self._cites_card_pool, self._cited_by_card_pool):
+            for card in pool:
+                if card.get("packed", False):
+                    card["title"].config(wraplength=new_wrap)
+
     def _render_card_pool(self, container_frame, pool, items, badge_label, empty_label):
         badge_label.config(text=str(len(items)))
 
@@ -1078,7 +1247,9 @@ class CitationNetworkGUI(ctk.CTk):
             container_frame.pack_forget()
             empty_label.pack(anchor="w", padx=10, pady=4)
             for card in pool:
-                card["frame"].pack_forget()
+                if card.get("packed", False):
+                    card["frame"].pack_forget()
+                    card["packed"] = False
             return
 
         empty_label.pack_forget()
@@ -1116,7 +1287,7 @@ class CitationNetworkGUI(ctk.CTk):
                 bg="#FFFFFF",
                 anchor="w",
                 justify="left",
-                wraplength=270
+                wraplength=self._card_wraplength
             )
             lbl_title.pack(fill="x", anchor="w")
 
@@ -1137,59 +1308,73 @@ class CitationNetworkGUI(ctk.CTk):
                 "title": lbl_title,
                 "sub": lbl_sub,
                 "doi": None,
+                "idx_text": None,
+                "packed": False,
             }
 
-            widgets = [card_frame, lbl_idx, text_box, lbl_title, lbl_sub]
-
-            def _bind_hover_and_click(cd, w_list):
+            def _bind_card(cd):
                 def _on_enter(e):
-                    for w in w_list:
-                        w.config(bg="#F4F5F9", cursor="hand2")
+                    cd["frame"].config(bg="#F4F5F9", cursor="hand2")
+                    cd["idx"].config(bg="#F4F5F9", cursor="hand2")
+                    cd["box"].config(bg="#F4F5F9", cursor="hand2")
+                    cd["title"].config(bg="#F4F5F9", cursor="hand2")
+                    cd["sub"].config(bg="#F4F5F9", cursor="hand2")
 
                 def _on_leave(e):
-                    for w in w_list:
-                        w.config(bg="#FFFFFF", cursor="")
+                    cd["frame"].config(bg="#FFFFFF", cursor="")
+                    cd["idx"].config(bg="#FFFFFF", cursor="")
+                    cd["box"].config(bg="#FFFFFF", cursor="")
+                    cd["title"].config(bg="#FFFFFF", cursor="")
+                    cd["sub"].config(bg="#FFFFFF", cursor="")
 
                 def _on_click(e):
                     if cd["doi"]:
                         self._hop_to_paper(cd["doi"])
 
-                def _on_mwheel(e):
-                    self.index_canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-
-                for w in w_list:
-                    w.bind("<Enter>", _on_enter)
-                    w.bind("<Leave>", _on_leave)
+                for w in (cd["frame"], cd["idx"], cd["box"], cd["title"], cd["sub"]):
                     w.bind("<Button-1>", _on_click)
-                    w.bind("<MouseWheel>", _on_mwheel)
 
-            _bind_hover_and_click(card_data, widgets)
+                cd["frame"].bind("<Enter>", _on_enter)
+                cd["frame"].bind("<Leave>", _on_leave)
+
+            _bind_card(card_data)
             pool.append(card_data)
 
-        # Update and pack required cards
+        # Update and pack required cards (Only reconfigure text if target changed!)
         for i, target_doi in enumerate(items, 1):
             card = pool[i - 1]
-            tp = all_papers.get(target_doi, {})
-            tp_title = tp.get('title', target_doi)
-            tp_authors = tp.get('authors', [])
-            tp_year = str(tp.get('year', ''))
+            idx_str = f"[{i}]"
 
-            author_str = tp_authors[0].split(',')[0] if tp_authors else ""
-            if len(tp_authors) > 1:
-                author_str += " et al."
-            author_year = f"{author_str} ({tp_year})" if (author_str and tp_year) else (author_str or tp_year or "")
+            if card["doi"] != target_doi or card["idx_text"] != idx_str:
+                tp = all_papers.get(target_doi, {})
+                tp_title = tp.get('title', target_doi)
+                tp_authors = tp.get('authors', [])
+                tp_year = str(tp.get('year', ''))
 
-            card["doi"] = target_doi
-            card["idx"].config(text=f"[{i}]")
-            card["title"].config(text=tp_title)
-            card["sub"].config(text=author_year)
-            card["frame"].pack(fill="x", padx=4, pady=2)
+                author_str = tp_authors[0].split(',')[0] if tp_authors else ""
+                if len(tp_authors) > 1:
+                    author_str += " et al."
+                author_year = f"{author_str} ({tp_year})" if (author_str and tp_year) else (author_str or tp_year or "")
 
-        # Hide any excess cards
+                card["doi"] = target_doi
+                card["idx_text"] = idx_str
+                card["idx"].config(text=idx_str)
+                card["title"].config(text=tp_title)
+                card["sub"].config(text=author_year)
+
+            if not card.get("packed", False):
+                card["frame"].pack(fill="x", padx=4, pady=2)
+                card["packed"] = True
+
+        # Hide any excess cards without destroying
         for i in range(len(items), len(pool)):
-            pool[i]["frame"].pack_forget()
+            if pool[i].get("packed", False):
+                pool[i]["frame"].pack_forget()
+                pool[i]["packed"] = False
 
     def _hop_to_paper(self, doi: str):
+        if not doi:
+            return
         if hasattr(self, 'graph_view'):
             self.graph_view.select_and_focus_node(doi)
         self.display_paper_detail(doi)
@@ -1263,12 +1448,16 @@ class CitationNetworkGUI(ctk.CTk):
         self.entry_oa_email.delete(0, "end")
         self.entry_oa_email.insert(0, os.getenv("OPENALEX_EMAIL", ""))
 
+        gen_notes = os.getenv("GENERATE_OBSIDIAN_NOTES", "true").lower() in ("true", "1", "yes")
+        self.generate_obsidian_notes.set(gen_notes)
+
     def save_config(self):
         user_id = self.entry_user_id.get().strip()
         api_key = self.entry_api_key.get().strip()
         lib_type = self.combo_lib_type.get().strip()
         vault_path = self.entry_vault_path.get().strip()
         oa_email = self.entry_oa_email.get().strip()
+        gen_notes_str = "true" if self.generate_obsidian_notes.get() else "false"
 
         if not os.path.exists(self.env_path):
             with open(self.env_path, "w", encoding="utf-8") as f:
@@ -1279,11 +1468,18 @@ class CitationNetworkGUI(ctk.CTk):
         set_key(self.env_path, "ZOTERO_LIBRARY_TYPE", lib_type)
         set_key(self.env_path, "OBSIDIAN_VAULT_PATH", vault_path)
         set_key(self.env_path, "OPENALEX_EMAIL", oa_email)
+        set_key(self.env_path, "GENERATE_OBSIDIAN_NOTES", gen_notes_str)
 
         # Reload into environment
         load_dotenv(self.env_path, override=True)
         self.log("Configuration saved to .env successfully.")
         messagebox.showinfo("Saved", "Settings successfully saved to .env")
+
+    def _on_gen_notes_toggled(self):
+        if self.generate_obsidian_notes.get():
+            self.log("Obsidian note export enabled.")
+        else:
+            self.log("Obsidian note export disabled (Standalone Graph View mode).")
 
     def _browse_vault_path(self):
         chosen = filedialog.askdirectory(title="Select Obsidian Vault Directory")
@@ -1621,14 +1817,19 @@ class CitationNetworkGUI(ctk.CTk):
         lib_type = self.combo_lib_type.get().strip() or os.getenv("ZOTERO_LIBRARY_TYPE", "user")
         vault_path = self.entry_vault_path.get().strip() or os.getenv("OBSIDIAN_VAULT_PATH", "").strip()
         oa_email = self.entry_oa_email.get().strip() or os.getenv("OPENALEX_EMAIL", "").strip()
+        gen_notes = self.generate_obsidian_notes.get()
 
         if not user_id or not api_key:
             messagebox.showwarning("Missing Credentials", "Please enter your Zotero User ID and API Key in Settings.")
             self.tabview.set("  Settings (.env)  ")
             return
 
-        if not vault_path or not os.path.exists(vault_path):
-            messagebox.showwarning("Invalid Vault Path", "Please provide a valid Obsidian Vault directory path.")
+        if gen_notes and (not vault_path or not os.path.exists(vault_path)):
+            messagebox.showwarning(
+                "Invalid Vault Path",
+                "Obsidian Vault directory path is required when note generation is enabled.\n\n"
+                "Please configure a valid folder in Settings or uncheck 'Generate Obsidian Markdown Notes'."
+            )
             self.tabview.set("  Settings (.env)  ")
             return
 
@@ -1652,15 +1853,15 @@ class CitationNetworkGUI(ctk.CTk):
         self._update_metrics(papers="0", doi="0", edges="0", notes="0")
 
         self.log("\n=======================================================")
-        self.log(f"Starting Citation Network Build [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]")
+        mode_str = "With Obsidian Notes" if gen_notes else "Standalone GUI Graph Mode"
+        self.log(f"Starting Citation Network Build ({mode_str}) [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]")
         self.log("=======================================================")
 
         def _pipeline_worker():
             try:
-                # 1. Initialize Clients (Auto-saves into [vault_path] / [collection_name])
+                # 1. Initialize Clients
                 zotero = ZoteroClient(user_id, api_key, library_type=lib_type)
                 openalex = OpenAlexClient(email=oa_email, cache_file=self.cache_file)
-                writer = ObsidianWriter(vault_path, citation_folder="")
 
                 # Ensure tree structure is available
                 if not self.tree_data:
@@ -1671,8 +1872,9 @@ class CitationNetworkGUI(ctk.CTk):
                     tree = self.tree_data
 
                 # --- STEP 1: Fetch Papers from Zotero ---
-                self.set_progress(0, 100, "Step 1/3: Fetching papers from Zotero...")
-                self.log("Step 1/3: Fetching papers from Zotero...")
+                total_steps = 3 if gen_notes else 2
+                self.set_progress(0, 100, f"Step 1/{total_steps}: Fetching papers from Zotero...")
+                self.log(f"Step 1/{total_steps}: Fetching papers from Zotero...")
 
                 if is_all:
                     target_name = "All Collections"
@@ -1707,11 +1909,11 @@ class CitationNetworkGUI(ctk.CTk):
                 self.set_progress(35, 100, f"Step 1 Complete: {total_papers} papers collected")
 
                 # --- STEP 2: OpenAlex Citation Network Analysis ---
-                self.log("\nStep 2/3: Querying OpenAlex and mapping citation network...")
+                self.log(f"\nStep 2/{total_steps}: Querying OpenAlex and mapping citation network...")
                 cites, cited_by, all_papers = openalex.build_citation_network(
                     papers,
                     log_callback=self.log,
-                    progress_callback=lambda c, t, m: self.set_progress(35 + int((c/t)*45), 100, m)
+                    progress_callback=lambda c, t, m: self.set_progress(35 + int((c/t)*(45 if gen_notes else 60)), 100, m)
                 )
 
                 if self.stop_requested:
@@ -1723,7 +1925,7 @@ class CitationNetworkGUI(ctk.CTk):
 
                 self._update_metrics(edges=edges)
                 self.log(f"Step 2 Complete: {edges} citation links mapped ({connected}/{total_papers} papers connected)")
-                self.set_progress(80, 100, f"Step 2 Complete: {edges} citation edges")
+                self.set_progress(80 if gen_notes else 100, 100, f"Step 2 Complete: {edges} citation edges")
 
                 self.current_cites = cites
                 self.current_cited_by = cited_by
@@ -1732,37 +1934,55 @@ class CitationNetworkGUI(ctk.CTk):
                 # Update Graph View in real time
                 self.after(0, lambda c=cites, cb=cited_by, ap=all_papers: self.graph_view.load_graph_data(c, cb, ap))
 
-                # --- STEP 3: Generate Obsidian Markdown Notes ---
-                self.log("\nStep 3/3: Writing Obsidian markdown notes...")
-                created, updated = writer.write_all(
-                    papers,
-                    cites,
-                    cited_by,
-                    all_papers,
-                    log_callback=self.log,
-                    progress_callback=lambda c, t, m: self.set_progress(80 + int((c/t)*20), 100, m)
-                )
+                if gen_notes:
+                    # --- STEP 3: Generate Obsidian Markdown Notes ---
+                    self.log(f"\nStep 3/{total_steps}: Writing Obsidian markdown notes...")
+                    writer = ObsidianWriter(vault_path, citation_folder="")
+                    created, updated = writer.write_all(
+                        papers,
+                        cites,
+                        cited_by,
+                        all_papers,
+                        log_callback=self.log,
+                        progress_callback=lambda c, t, m: self.set_progress(80 + int((c/t)*20), 100, m)
+                    )
 
-                total_notes = created + updated
-                self._update_metrics(notes=total_notes)
+                    total_notes = created + updated
+                    self._update_metrics(notes=total_notes)
 
-                dest_folder = vault_path if is_all else os.path.join(vault_path, ObsidianWriter.sanitize_filename(target_name))
+                    dest_folder = vault_path if is_all else os.path.join(vault_path, ObsidianWriter.sanitize_filename(target_name))
 
-                self.set_progress(100, 100, "✓ Citation Network successfully built!")
-                self.log("\n=======================================================")
-                self.log("✓ SUCCESS: Citation network notes generated!")
-                self.log(f"  • Notes Written: {total_notes} (Created: {created}, Updated: {updated})")
-                self.log(f"  • Citation Edges: {edges}")
-                self.log(f"  • Destination Folder: {dest_folder}")
-                self.log("=======================================================")
+                    self.set_progress(100, 100, "✓ Citation Network successfully built!")
+                    self.log("\n=======================================================")
+                    self.log("✓ SUCCESS: Citation network notes generated!")
+                    self.log(f"  • Notes Written: {total_notes} (Created: {created}, Updated: {updated})")
+                    self.log(f"  • Citation Edges: {edges}")
+                    self.log(f"  • Destination Folder: {dest_folder}")
+                    self.log("=======================================================")
 
-                messagebox.showinfo(
-                    "Network Build Complete",
-                    f"Successfully generated {total_notes} Obsidian notes!\n"
-                    f"Citation Links: {edges}\n"
-                    f"Folder: {dest_folder}\n\n"
-                    f"You can now explore the citation graph in Obsidian."
-                )
+                    messagebox.showinfo(
+                        "Network Build Complete",
+                        f"Successfully generated {total_notes} Obsidian notes!\n"
+                        f"Citation Links: {edges}\n"
+                        f"Folder: {dest_folder}\n\n"
+                        f"You can now explore the citation graph in Obsidian and Graph View."
+                    )
+                else:
+                    self.set_progress(100, 100, "✓ Citation Network mapped (Obsidian notes skipped)!")
+                    self.log("\n=======================================================")
+                    self.log("✓ SUCCESS: Citation network mapped successfully!")
+                    self.log(f"  • Connected Papers: {connected}/{total_papers}")
+                    self.log(f"  • Citation Edges: {edges}")
+                    self.log("  • Obsidian Notes: Skipped (Standalone Mode)")
+                    self.log("=======================================================")
+
+                    messagebox.showinfo(
+                        "Network Build Complete",
+                        f"Citation network successfully mapped in Graph View!\n\n"
+                        f"• Connected Papers: {connected}/{total_papers}\n"
+                        f"• Citation Links: {edges}\n\n"
+                        f"Explore the interactive graph in the Graph View panel."
+                    )
 
             except Exception as e:
                 self.log(f"\n✗ ERROR during pipeline execution: {e}")
@@ -1805,7 +2025,11 @@ class CitationNetworkGUI(ctk.CTk):
             else:
                 subprocess.Popen(["xdg-open", vault_path])
         else:
-            messagebox.showinfo("Vault Directory", "Obsidian Vault directory path not found.")
+            messagebox.showinfo(
+                "Vault Directory",
+                "Obsidian Vault directory path is not configured or does not exist.\n"
+                "Please configure a valid Obsidian Vault Path in Settings."
+            )
 
 
 # ----------------------------------------------------------------------

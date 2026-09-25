@@ -1,8 +1,15 @@
-# Citation Network Builder v1.2.0
-
-![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white) ![Version](https://img.shields.io/badge/version-1.2.0-8E7CC3?style=flat-square) ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)
-
-**Citation Network Builder** analyzes citation relationships between papers in your **Zotero** library using the free **OpenAlex** academic database, automatically generates linked notes in **Obsidian**, and provides an embedded **interactive 2D citation graph** with one-click deep links back to desktop Zotero.
+<div align="center">
+  <img src="assets/logo.png" width="160" alt="Citation Network Logo" />
+  <h1>Citation Network Builder</h1>
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
+    <img src="https://img.shields.io/badge/version-1.2.0-8E7CC3?style=flat-square" alt="Version">
+    <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="Platform">
+  </p>
+  <p>
+    <b>Analyze citation relationships in your Zotero library with OpenAlex, generate linked Obsidian notes,<br>and explore an interactive 2D citation graph with deep links back to desktop Zotero.</b>
+  </p>
+</div>
 
 ---
 
@@ -81,8 +88,9 @@ Notes are automatically organized inside your vault under a folder matching your
 
 ## Helpful Tips & FAQ
 
+- **Don't use Obsidian?** No problem! Uncheck **`Generate Obsidian Notes`** in the GUI (or run `python main.py --cli --no-obsidian` in terminal) to use the app as a standalone 2D citation graph visualizer without writing any markdown files.
 - **Do papers need DOIs?** Yes, OpenAlex matches citations via DOIs. Papers with DOIs in Zotero will automatically connect.
-- **Can I re-run on the same folder?** Yes! Re-running safely updates citations. Any personal notes written below the auto-generated section are preserved.
+- **Can I re-run on the same folder?** Yes! Re-running safely updates citations. Any personal notes written below the auto-generated section in Obsidian are preserved.
 - **Is my data safe?** Yes. Your `.env` API keys stay entirely on your local machine and are never shared.
 - **Prefer the command line?** Run `python main.py --cli` for interactive terminal mode.
 

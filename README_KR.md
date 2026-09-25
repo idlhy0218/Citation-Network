@@ -1,8 +1,15 @@
-# Citation Network Builder v1.2.0
-
-![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white) ![Version](https://img.shields.io/badge/version-1.2.0-8E7CC3?style=flat-square) ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square)
-
-**Citation Network Builder**는 **Zotero**에 저장된 논문들의 인용 관계를 무료 학술 데이터베이스인 **OpenAlex**로 자동 분석하여, **Obsidian** 상호 연결 노트 및 앱 내 **인터랙티브 2D 인용망 그래프**로 시각화해주는 연구용 도구입니다.
+<div align="center">
+  <img src="assets/logo.png" width="160" alt="Citation Network Logo" />
+  <h1>Citation Network Builder</h1>
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
+    <img src="https://img.shields.io/badge/version-1.2.0-8E7CC3?style=flat-square" alt="Version">
+    <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="Platform">
+  </p>
+  <p>
+    <b>Zotero에 저장된 논문들의 인용 관계를 OpenAlex로 자동 분석하여,<br>Obsidian 상호 연결 노트 및 데스크톱 인터랙티브 2D 인용망 그래프로 시각화해주는 연구용 도구입니다.</b>
+  </p>
+</div>
 
 ---
 
@@ -81,6 +88,7 @@ OBSIDIAN_VAULT_PATH=C:\Users\이름\Vault  # 내 Obsidian 볼트 폴더의 절�
 
 ## 유용한 팁 & 자주 묻는 질문 (FAQ)
 
+- **Obsidian(옵시디언)을 안 쓰는데 사용 가능한가요?** 네, 전혀 문제 없습니다! GUI 화면에서 **`Generate Obsidian Notes`** 체크를 해제(또는 CLI에서 `python main.py --cli --no-obsidian`)하면 마크다운 노트를 생성하지 않고 오직 데스크톱 GUI에서 인터랙티브 2D 인용 그래프 및 논문 탐색기만 단독으로 즐기실 수 있습니다.
 - **논문에 DOI가 꼭 필요한가요?** 네, OpenAlex는 DOI를 기반으로 인용 데이터를 찾습니다. Zotero에서 논문에 DOI를 많이 채워둘수록 더 풍성한 인용망이 연결됩니다.
 - **같은 폴더에 다시 실행해도 안전한가요?** 네! 다시 실행해도 인용 관계만 최신으로 갱신되며, 자동 생성 영역 아래에 사용자가 직접 적은 메모나 코멘트는 삭제되지 않고 그대로 보존됩니다.
 - **내 개인정보는 안전한가요?** `.env` 파일에 저장된 API 키는 오직 내 컴퓨터에서만 작동하며 외부나 GitHub에 절대 공유되지 않습니다.

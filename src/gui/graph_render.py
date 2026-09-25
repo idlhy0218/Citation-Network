@@ -1,6 +1,6 @@
 """
-src/graph_render.py
-===================
+src/gui/graph_render.py
+=======================
 High-resolution 2D offscreen renderer for Citation Graph View.
 Supports:
 - Primary: skia-python (subpixel anti-aliasing, vector curves, hardware-accelerated 2D)
